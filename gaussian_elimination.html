@@ -74,6 +74,12 @@ function gauss(A) {
     m++;
     print("$$"+tostr(A)+"$$");
   }
+  sol = new Array(M);
+  for (i = M-1; 0 <= i; i--) {
+    sol[i] = A[i][N-1];
+    for (j = N-2; i < j; j--) sol[i] -= A[i][j]*sol[j];
+    print("$$\\implies x_"+(i+1)+" = "+sol[i]+"$$");
+  }
   MathJax.Hub.Typeset();
 }
 
@@ -111,7 +117,7 @@ $(document).ready(function() {
 
 <div>
 <input id="M" type="number" value="3" />
-<input id="N" type="number" value="3" />
+<input id="N" type="number" value="4" />
 <input id="Mh" type="hidden" />
 <input id="Nh" type="hidden" />
 <button id="abre">abre</button>
