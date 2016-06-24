@@ -357,8 +357,8 @@ function init_newton_polynomial() {
   update();
 }
 
-function minimum_m() {
-  var p = "minimum_m";
+function minimum_m_for_trapezoidal_and_simpsons() {
+  var p = "minimum_m_for_trapezoidal_and_simpsons";
   var a = get(p,"a").val()*1;
   var b = get(p,"b").val()*1;
   var ftrap = get(p,"ftrap").val()*1;
@@ -392,7 +392,7 @@ $(document).ready(function() {
   register_program("trapezoidal_rule");
   register_program("simpsons_rule");
   register_program("newton_polynomial");
-  register_program("minimum_m");
+  register_program("minimum_m_for_trapezoidal_and_simpsons");
   
   $("#input").children().hide();
   init_gaussian_elimination();
@@ -453,8 +453,8 @@ $(document).ready(function() {
 </table>
 </div>
 
-<!-- minimum m -->
-<div id="minimum_m">
+<!-- minimum m for trapezoidal and simpsons -->
+<div id="minimum_m_for_trapezoidal_and_simpsons">
 $a$: <input class="a" type="number" />
 $b$: <input class="b" type="number" />
 $\frac{f^{(2)}(\xi)}{2!}$: <input class="ftrap" type="number" />
