@@ -1,0 +1,471 @@
+
+<style>
+
+* {
+  margin: 0 auto;
+}
+
+html, body {
+  text-align: center;
+}
+
+</style>
+
+<!-- mathjax -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+<script type="text/javascript"
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML">
+</script>
+
+<!-- jquery -->
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.0.0.min.js"></script>
+
+<script>
+
+function strpow(vari,power,mult) {
+  if (power == 0) {
+    if (mult == true) return "";
+    return "1";
+  }
+  if (power == 1) return vari;
+  return vari+"^{"+power+"}";
+}
+
+function addpol(P,Q) {
+  var Pn = P.length-1;
+  var Qn = Q.length-1;
+  var ansn = (Pn > Qn ? Pn : Qn);
+  var ans = new Array(ansn+1);
+  for (var i = 0; i <= ansn; i++) {
+    ans[i] = (i <= Pn ? P[i] : 0)+(i <= Qn ? Q[i] : 0);
+  }
+  return ans;
+}
+
+function mulpol(P,Q) {
+  var Pn = P.length-1;
+  var Qn = Q.length-1;
+  var ansn = Pn+Qn;
+  var ans = new Array(ansn+1);
+  for (var i = 0; i <= ansn; i++) ans[i] = 0;
+  for (var Pi = 0; Pi <= Pn; Pi++) for (var Qi = 0; Qi <= Qn; Qi++) {
+    ans[Pi+Qi] += P[Pi]*Q[Qi];
+  }
+  return ans;
+}
+
+function intpol(P) {
+  var ans = new Array(P.length+1);
+  ans[0] = 0;
+  for (var i = 0; i < P.length; i++) ans[i+1] = P[i]/(i+1);
+  return ans;
+}
+
+function evalpol(P,x) {
+  var ans = 0;
+  var power = 1;
+  for (var i = 0; i < P.length; i++) {
+    ans += P[i]*power;
+    power *= x;
+  }
+  return ans;
+}
+
+function pol2str(P) {
+  var str = "";
+  var printed = false;
+  for (var i = P.length-1; 0 <= i; i--) if (P[i] != 0) {
+    if (printed) str += (P[i] < 0 ? "" : "+");
+    printed = true;
+    str += P[i]+strpow("x",i,true);
+  }
+  return str;
+}
+
+function matrix2str(A) {
+  var ces = "";
+  for (var i = 0; i < A[0].length-1; i++) ces += "c";
+  var str = "\\left(\\begin{array}{"+ces+"|c}";
+  for (var i = 0; i < A.length; i++) {
+    for (var j = 0; j < A[0].length; j++) {
+      if (j > 0) str += " & ";
+      str += A[i][j];
+    }
+    str += "\\\\";
+  }
+  return str+"\\end{array}\\right)";
+}
+
+function print(str) {
+  $("#canvas").append($("<div>"+str+"</div>"));
+}
+
+function get(idpref,idclass) {
+  return $("#"+idpref).find("."+idclass);
+}
+
+function register_program(id) {
+  $("#programs").append($("<option>"+id+"</option>"));
+}
+
+function divided_diffs(x,fx) {
+  var n = x.length-1;
+  var dp = new Array(n+1);
+  var mark = new Array(n+1);
+  for (var i = 0; i <= n; i++) {
+    dp[i] = new Array(n+1);
+    mark[i] = new Array(n+1);
+    for (var j = 0; j <= n; j++) mark[i][j] = false;
+  }
+  var f = function(i,j) {
+    if (mark[i][j]) return dp[i][j];
+    mark[i][j] = true;
+    if (i == j) dp[i][j] = fx[i];
+    else        dp[i][j] = (f(i+1,j)-f(i,j-1))/(x[j]-x[i]);
+    return dp[i][j];
+  };
+  for (var order = 0; order <= n; order++) {
+    for (var i = 0; i+order <= n; i++) {
+      var j = i+order;
+      var tmp = "$$f[";
+      for (var k = i; k <= j; k++) {
+        if (k > i) tmp += ",";
+        tmp += "x_{"+k+"}";
+      }
+      tmp += "] = "+f(i,j)+"$$";
+      print(tmp);
+    }
+  }
+}
+
+function gaussian_elimination() {
+  var p = "gaussian_elimination";
+  var M = get(p,"M").val()*1;
+  var N = get(p,"N").val()*1;
+  var A = new Array(M);
+  for (var m = 0; m < M; m++) {
+    A[m] = new Array(N);
+    for (var n = 0; n < N; n++) A[m][n] = get(p,"A_"+m+"_"+n).val()*1;
+  }
+  print("$$"+matrix2str(A)+"$$");
+  for (var m = 0, n = 0; n < N-1; n++) {
+    var i;
+    for (i = m; i < M && A[i][n] == 0; i++);
+    if (i == M) continue;
+    if (i != m) {
+      var tmp = A[i];
+      A[i] = A[m];
+      A[m] = tmp;
+      print("Trocamos $L_{"+(i+1)+"}$ com $L_{"+(m+1)+"}$");
+    }
+    var inv = 1/A[m][n];
+    A[m][n] = 1;
+    for (var j = n+1; j < N; j++) A[m][j] *= inv;
+    print("$$L_{"+(m+1)+"} \\gets "+inv+"L_{"+(m+1)+"}$$");
+    for (i = m+1; i < M; i++) {
+      var mul = -A[i][n];
+      A[i][n] = 0;
+      for (var j = n+1; j < N; j++) A[i][j] += A[m][j]*mul;
+      print("$$L_{"+(i+1)+"} \\gets L_{"+(i+1)+"}"+(mul >= 0 ? " + " : "")+mul+"L_{"+(m+1)+"}$$");
+    }
+    m++;
+    print("$$"+matrix2str(A)+"$$");
+  }
+  var sol = new Array(M);
+  for (var i = M-1; 0 <= i; i--) {
+    sol[i] = A[i][N-1];
+    for (var j = N-2; i < j; j--) sol[i] -= A[i][j]*sol[j];
+    print("$$\\implies x_{"+(i+1)+"} = "+sol[i]+"$$");
+  }
+}
+
+function init_gaussian_elimination() {
+  var p = "gaussian_elimination";
+  var newmatrix = function() {
+    var M = get(p,"M").val()*1;
+    var N = get(p,"N").val()*1;
+    get(p,"A").html("");
+    for (var m = 0; m < M; m++) {
+      row = "";
+      for (var n = 0; n < N; n++) row += "<td><input class=\"A_"+m+"_"+n+"\" type=\"number\" ></td>";
+      get(p,"A").append($("<tr>"+row+"</tr>"));
+    }
+  };
+  get(p,"M").change(newmatrix);
+  get(p,"N").change(newmatrix);
+  newmatrix();
+}
+
+function trapezoidal_rule() {
+  var p = "trapezoidal_rule";
+  var m = get(p,"m").val()*1;
+  var x = new Array(m+1);
+  var fx = new Array(m+1);
+  var ans = 0;
+  for (var i = 0; i <= m; i++) {
+    x[i] = get(p,"x_"+i).val()*1;
+    fx[i] = get(p,"fx_"+i).val()*1;
+    var coef = "";
+    var cn = 1;
+    if (i != 0 && i != m) {
+      coef = "2";
+      cn = 2;
+    }
+    var tmp = (cn*fx[i]);
+    ans += tmp;
+    print("$$"+coef+"f(x_{"+i+"}) = "+tmp+"$$");
+  }
+  var h = x[1]-x[0];
+  print("$$I_{TR} = "+(ans*h/2)+"$$");
+  print("$$\\frac{mh^3}{6} = "+(m*(h*h*h)/6)+"$$");
+  divided_diffs(x,fx);
+}
+
+function init_trapezoidal_rule() {
+  var p = "trapezoidal_rule";
+  var update = function() {
+    var m = get(p,"m").val()*1;
+    get(p,"x").html("<td style=\"text-align: center;\">$x$</td>");
+    get(p,"fx").html("<td style=\"text-align: center;\">$f(x)$</td>");
+    MathJax.Hub.Typeset();
+    for (var i = 0; i <= m; i++) {
+      get(p,"x").append("<td><input class=\"x_"+i+"\" type=\"number\" ></td>");
+      get(p,"fx").append("<td><input class=\"fx_"+i+"\" type=\"number\" ></td>");
+    }
+  };
+  get(p,"m").change(update);
+  update();
+}
+
+function simpsons_rule() {
+  var p = "simpsons_rule";
+  var m = get(p,"m").val()*1;
+  var x = new Array(m+1);
+  var fx = new Array(m+1);
+  var ans = 0;
+  for (var i = 0; i <= m; i++) {
+    x[i] = get(p,"x_"+i).val()*1;
+    fx[i] = get(p,"fx_"+i).val()*1;
+    var coef = "";
+    var cn = 1;
+    if (i != 0 && i != m) {
+      if (i%2) {//odd
+        coef = "4";
+        cn = 4;
+      }
+      else {
+        coef = "2";
+        cn = 2;
+      }
+    }
+    var tmp = (cn*fx[i]);
+    ans += tmp;
+    print("$$"+coef+"f(x_{"+i+"}) = "+tmp+"$$");
+  }
+  var h = x[1]-x[0];
+  print("$$I_{SR} = "+(ans*h/3)+"$$");
+  print("$$\\frac{mh^5}{180/24} = "+(m*(h*h*h*h*h)/(180/24))+"$$");
+  divided_diffs(x,fx);
+}
+
+function init_simpsons_rule() {
+  var p = "simpsons_rule";
+  var update = function() {
+    var m = get(p,"m").val()*1;
+    get(p,"x").html("<td style=\"text-align: center;\">$x$</td>");
+    get(p,"fx").html("<td style=\"text-align: center;\">$f(x)$</td>");
+    MathJax.Hub.Typeset();
+    for (var i = 0; i <= m; i++) {
+      get(p,"x").append("<td><input class=\"x_"+i+"\" type=\"number\" ></td>");
+      get(p,"fx").append("<td><input class=\"fx_"+i+"\" type=\"number\" ></td>");
+    }
+  };
+  get(p,"m").change(update);
+  update();
+}
+
+function newton_polynomial() {
+  var p = "newton_polynomial";
+  var n = get(p,"n").val()*1;
+  var x = new Array(n+1);
+  var fx = new Array(n+1);
+  for (var i = 0; i <= n; i++) {
+    x[i] = get(p,"x_"+i).val()*1;
+    fx[i] = get(p,"fx_"+i).val()*1;
+  }
+  var a = x[0], b = x[n];
+  var dp = new Array(n+1);
+  var mark = new Array(n+1);
+  for (var i = 0; i <= n; i++) {
+    dp[i] = new Array(n+1);
+    mark[i] = new Array(n+1);
+    for (var j = 0; j <= n; j++) mark[i][j] = false;
+  }
+  var f = function(i,j) {
+    if (mark[i][j]) return dp[i][j];
+    mark[i][j] = true;
+    if (i == j) dp[i][j] = fx[i];
+    else        dp[i][j] = (f(i+1,j)-f(i,j-1))/(x[j]-x[i]);
+    return dp[i][j];
+  };
+  for (var order = 0; order <= n; order++) {
+    for (var i = 0; i+order <= n; i++) {
+      var j = i+order;
+      var tmp = "$$f[";
+      for (k = i; k <= j; k++) {
+        if (k > i) tmp += ",";
+        tmp += "x_{"+k+"}";
+      }
+      tmp += "] = "+f(i,j)+"$$";
+      print(tmp);
+    }
+  }
+  print("$\\implies p_{"+n+"}(x) =$");
+  print("$"+fx[0]+"$");
+  var polans = [fx[0]];
+  for (var i = 0; i < n; i++) {
+    var str = "$"+(f(0,i+1) >= 0 ? "+" : "")+f(0,i+1);
+    for (var j = 0; j <= i; j++) str += "(x - "+x[j]+")";
+    var pol = [f(0,i+1)];
+    for (var j = 0; j <= i; j++) pol = mulpol(pol,[-x[j],1]);
+    polans = addpol(polans,pol);
+    str += "$: $";
+    str += pol2str(pol);
+    print(str+"$");
+  }
+  print("$="+pol2str(polans)+"$");
+  var integral = intpol(polans);
+  print("$$\\implies \\int p_{"+n+"}(x) = "+pol2str(integral)+"$$");
+  print("$$\\implies \\int_{"+a+"}^{"+b+"} p_{"+n+"}(x) = "+evalpol(integral,b)+" - "+evalpol(integral,a)+" = "+(evalpol(integral,b)-evalpol(integral,a))+"$$");
+}
+
+function init_newton_polynomial() {
+  var p = "newton_polynomial";
+  var update = function() {
+    var n = get(p,"n").val()*1;
+    get(p,"x").html("<td style=\"text-align: center;\">$x$</td>");
+    get(p,"fx").html("<td style=\"text-align: center;\">$f(x)$</td>");
+    MathJax.Hub.Typeset();
+    for (var i = 0; i <= n; i++) {
+      get(p,"x").append("<td><input class=\"x_"+i+"\" type=\"number\" ></td>");
+      get(p,"fx").append("<td><input class=\"fx_"+i+"\" type=\"number\" ></td>");
+    }
+  };
+  get(p,"n").change(update);
+  update();
+}
+
+function minimum_m() {
+  var p = "minimum_m";
+  var a = get(p,"a").val()*1;
+  var b = get(p,"b").val()*1;
+  var ftrap = get(p,"ftrap").val()*1;
+  var fsimp = get(p,"fsimp").val()*1;
+  var E = get(p,"E").val()*1;
+  var I = b-a;
+  // trapezium
+  var mtrap = 0, h;
+  do {
+    mtrap++;
+    h = I/mtrap;
+  } while (mtrap*(h*h*h)*ftrap/6 > E);
+  // simpson
+  var msimp = 0;
+  do {
+    msimp++;
+    h = I/msimp;
+  } while (msimp*(h*h*h*h*h)*fsimp/(180/24) > E);
+  print("$$m_{trap} = "+mtrap+"$$");
+  print("$$m_{simp} = "+msimp+"$$");
+}
+
+$(document).ready(function() {
+  $("#programs").change(function() {
+    opt = $(this).find(":selected").text();
+    if (opt == "") return;
+    $("#input").children().hide();
+    $("#"+opt).show();
+  });
+  register_program("gaussian_elimination");
+  register_program("trapezoidal_rule");
+  register_program("simpsons_rule");
+  register_program("newton_polynomial");
+  register_program("minimum_m");
+  
+  $("#input").children().hide();
+  init_gaussian_elimination();
+  init_trapezoidal_rule();
+  init_simpsons_rule();
+  init_newton_polynomial();
+  
+  $("#run").click(function() {
+    $("#canvas").html("");
+    cb = window[$("#programs").find(":selected").text()];
+    cb();
+    MathJax.Hub.Typeset();
+  });
+});
+
+</script>
+<body>
+
+<div>
+<select id="programs">
+  <option></option>
+</select>
+</div>
+
+<div id="input">
+
+<!-- gaussian elimination -->
+<div id="gaussian_elimination">
+<input class="M" type="number" value="3" />
+<input class="N" type="number" value="4" />
+<table class="A"></table>
+</div>
+
+<!-- trapezoidal rule -->
+<div id="trapezoidal_rule">
+<input class="m" type="number" value="4" />
+<table>
+  <tr class="x"></tr>
+  <tr class="fx"></tr>
+</table>
+</div>
+
+<!-- simpsons rule -->
+<div id="simpsons_rule">
+<input class="m" type="number" value="4" />
+<table>
+  <tr class="x"></tr>
+  <tr class="fx"></tr>
+</table>
+</div>
+
+<!-- newton polynomial -->
+<div id="newton_polynomial">
+<input class="n" type="number" value="4" />
+<table>
+  <tr class="x"></tr>
+  <tr class="fx"></tr>
+</table>
+</div>
+
+<!-- minimum m -->
+<div id="minimum_m">
+$a$: <input class="a" type="number" />
+$b$: <input class="b" type="number" />
+$\frac{f^{(2)}(x)}{2!}$: <input class="ftrap" type="number" />
+$\frac{f^{(4)}(x)}{4!}$: <input class="fsimp" type="number" />
+required error: <input class="E" type="number" />
+</div>
+
+</div>
+
+<button id="run">Run</button>
+
+<div id="canvas"></div>
+
+</body>
